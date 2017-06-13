@@ -94,6 +94,12 @@ def second_pass( commands, num_frames ):
                 #print 'knob: ' + knob_name + '\tvalue: ' + str(frames[f][knob_name])
     return frames
 
+def third_pass(symbols):
+    light = symbols['l1']
+    ambient = symbols['ambient']
+    constants = symbols['white']
+    return (light, ambient, constants)
+
 def run(filename):
     """
     This function runs an mdl script
@@ -112,6 +118,15 @@ def run(filename):
 
     (name, num_frames) = first_pass(commands)
     frames = second_pass(commands, num_frames)
+    '''(light, ambient, constants) = third_pass(symbols)
+
+    lights = {}
+    lights['light'] = light[1]
+    lights['ambient'] = ambient[1:]
+    lights['constants'] = constants[1]
+    print "lights:"
+    print lights'''
+    
     #print frames
     step = 0.1
 
@@ -132,9 +147,7 @@ def run(filename):
             for knob in frame:
                 symbols[knob][1] = frame[knob]
                 #print '\tkob: ' + knob + '\tvalue: ' + str(frame[knob])
-                
         for command in commands:
-            #print command
             c = command[0]
             args = command[1:]
             knob_value = 1
@@ -181,7 +194,6 @@ def run(filename):
             elif c == 'rotate':
                 if command[-1]:
                     knob_value = symbols[command[-1]][1]
-                    
                 theta = args[1] * (math.pi/180) * knob_value
                 if args[0] == 'x':
                     tmp = make_rotX(theta)

@@ -3,15 +3,41 @@ from matrix import *
 from math import *
 from gmath import *
 
-
 def scanline_convert(polygons, i, screen, zbuffer):
     global red
-    print red
     vert1 = polygons[i]
     vert2 = polygons[i+1]
     vert3 = polygons[i+2]
+    color = [0, 0, 0]
+
+    """print "lights in draw:"
+    print lights
+    constants = lights['constants']
+    ka = [constants['red'][0], constants['blue'][0], constants['green'][0]]
+    kd = [constants['red'][1], constants['blue'][1], constants['green'][1]]
+    ks = [constants['red'][2], constants['blue'][2], constants['green'][2]]
+    ambient = lights['ambient']
+    light = lights['light']
+
+    for n in range(3):
+        amb = lights['ambient'][n]
+        Lv = lights['light']['location']
+        col = lights['light']['color'][n]
+        color[n] = calc_ambient(amb, ka[n]) + calc_diffuse(polygons, i, Lv, col, kd[n]) + calc_specular(polygons, i, Lv, col, ks[n])
+        if color[n] > 255:
+            color[n] = 255
+        elif color[n] < 0:
+            color[n] = 0
+
+    if color == [0, 0, 0]:
+        color = [red % 255 + 50, 0, 0]
+    print "color:"
+    print color """
+    
     color = [red % 255 + 50, 0, 0]
     #sets the top, middle, and bottom verticies
+        
+        
     if vert1[1] >= vert2[1] and vert1[1] >= vert3[1]:
         top = vert1
         if vert2[1] > vert3[1]:
@@ -36,13 +62,24 @@ def scanline_convert(polygons, i, screen, zbuffer):
         else:
             middle = vert2
             bottom = vert1
+    if top[1] == bottom[1]:
+        tmp = middle
+        middle = bottom
+        bottom = tmp
 
+    '''print "top:"
+    print top
+    print "middle:"
+    print middle
+    print "bottom:"
+    print bottom'''
+    
     y = bottom[1]
     #case 1: middle and bottom are same
     #case 2: top and middle are same
     #case 3: middle before top
     #case 4: top before middle
-
+    
     z = int(top[2])
     #case 1: middle and bottom are same
     if middle[1] == bottom[1]:
@@ -50,16 +87,16 @@ def scanline_convert(polygons, i, screen, zbuffer):
         if middle[0] < bottom[0]:
             x0 = middle[0]
             x1 = bottom[0]
-            x0_step = (top[0] - middle[0]) / (top[1] - middle[1])
-            x1_step = (top[0] - bottom[0]) / (top[1] - bottom[1])
+            x0_step = (top[0] - middle[0]) * 1.0 / (top[1] - middle[1])
+            x1_step = (top[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
         else:
             #if bottom is in front
             x0 = bottom[0]
             x1 = middle[0]
-            x0_step = (top[0] - bottom[0]) / (top[1] - bottom[1])
-            x1_step = (top[0] - middle[0]) / (top[1] - middle[1])
+            x0_step = (top[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
+            x1_step = (top[0] - middle[0]) * 1.0 / (top[1] - middle[1])
         #fill in polygon
-        for i in range(int(top[1] - bottom[1])):
+        for i in range(int(top[1] - bottom[1] + 0.7)):
             draw_line(int(x0), int(y), z, int(x1), int(y), z, screen, zbuffer, color)
             x0 += x0_step
             x1 += x1_step
@@ -67,71 +104,127 @@ def scanline_convert(polygons, i, screen, zbuffer):
 
     #case 2: top and middle are same
     elif top[1] == middle[1]:
+        #print "top and middle are same"
         x0 = bottom[0]
         x1 = bottom[0]
         #if top in front
         if top[0] < middle[0]:
-            x0_step = (top[0] - bottom[0]) / (top[1] - bottom[1])
-            x1_step = (middle[0] - bottom[0]) / (middle[1] - bottom[1])
+            x0_step = (top[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
+            x1_step = (middle[0] - bottom[0]) * 1.0 / (middle[1] - bottom[1])
         #if middle in front
         else:
-            x0_step = (top[0] - middle[0]) / (top[1] - middle[1])
-            x1_step = (top[0] - bottom[0]) / (top[1] - bottom[1])
+            x0_step = (middle[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
+            x1_step = (top[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
         #fill in polygon
-        for i in range(int(top[1] - bottom[1])):
+        for i in range(int(top[1] - bottom[1] + 0.7)):
             draw_line(int(x0), int(y), z, int(x1), int(y), z, screen, zbuffer, color)
             x0 += x0_step
             x1 += x1_step
             y += 1
-    
     else:
         x0 = bottom[0]
         x1 = bottom[0]
-        #case 3: middle before top
-        if middle[0] < top[0]:
-            x0_step = (middle[0] - bottom[0]) / (middle[1] - bottom[1])
-            x1_step = (top[0] - bottom[0]) / (top[1] - bottom[1])
-            x_top_step = (top[0] - middle[0]) / (top[1] - middle[1])
+        #case 3: middle before bottom
+        if middle[0] < bottom[0]:
+            x0_step = (middle[0] - bottom[0]) * 1.0 / (middle[1] - bottom[1])
+            x1_step = (top[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
+            x_top_step = (top[0] - middle[0]) * 1.0 / (top[1] - middle[1])
 
             #fill in from bottom to middle            
-            for i in range(int(middle[1] - bottom[1])):
+            for i in range(int(middle[1] - bottom[1] + 0.7)):
                 draw_line(int(x0), int(y), z, int(x1), int(y), z, screen, zbuffer, color)
                 x0 += x0_step
                 x1 += x1_step
                 y += 1
 
             #fill in from middle to top
-            for i in range(int(top[1] - middle[1])):
+            for i in range(int(top[1] - middle[1] + 0.7)):
                 draw_line(int(x0), int(y), z, int(x1), int(y), z, screen, zbuffer, color)
                 x0 += x_top_step
                 x1 += x1_step
                 y += 1
-        #case 4: top before middle
+        #case 4: bottom before middle
         else:
-            x0_step = (top[0] - bottom[0]) / (top[1] - bottom[1])
-            x1_step = (middle[0] - bottom[0]) / (middle[1] - bottom[1])
-            x_top_step = (top[0] - middle[0]) / (top[1] - middle[1])
-
-            for i in range(int(middle[1] - bottom[1])):
+            x0_step = (top[0] - bottom[0]) * 1.0 / (top[1] - bottom[1])
+            x1_step = (middle[0] - bottom[0]) * 1.0 / (middle[1] - bottom[1])
+    
+            
+            x_top_step = (top[0] - middle[0]) * 1.0 / (top[1] - middle[1])
+            
+            for i in range(int(middle[1] - bottom[1] + 0.7)):
+                i+= 1
                 draw_line(int(x0), int(y), z, int(x1), int(y), z, screen, zbuffer, color)
                 x0 += x0_step
                 x1 += x1_step
                 y += 1
-
-            for i in range(int(top[1] - middle[1])):
+                
+            for i in range(int(top[1] - middle[1] + 0.7)):
                 draw_line(int(x0), int(y), z, int(x1), int(y), z, screen, zbuffer, color)
                 x0 += x0_step
                 x1 += x_top_step
                 y += 1
-    
+            
 
+def calc_ambient(A, K):
+    #DONE
+    #A: color of ambient light r, g, b
+    #K: constant of ambient refection (0-1)
+    #returns rgb
+    ret = A * K
+    if ret > 255:
+        ret = 255
+    elif ret < 0:
+        ret = 0
+    return ret
+    
+def calc_diffuse(polygons, i, Lv, col, K):
+    #DONE
+    #Lv: vector of point light source <x, y, z>
+    #col: color of L
+    #K: constant of ambient refection (0-1)
+    #N: normal vector
+    #tmp: dot multiplication of N and L
+    #returns constant
+    P = 1
+    N = calculate_normal(polygons, i)
+    tmp = dot_mult(N, Lv)
+    if tmp < 0:
+        tmp = 0
+    ret = col * K * tmp
+    math.pow(ret, P)
+    return ret 
+
+def calc_specular(polygons, i, Lv, col, K):
+    #Lv: vector of point light source <x, y, z>
+    #col: color of L
+    #K: constant pf specular reflections
+    #P: How quickly the reflection fades
+    #V = view vector
+    V = [0, 0, 1]
+    N = calculate_normal(polygons, i)
+    tmp = dot_mult(N, Lv) * 2
+    N[0] = N[0] * tmp - Lv[0]
+    N[1] = N[1] * tmp - Lv[1]
+    N[2] = N[2] * tmp - Lv[2]
+    ret = dot_mult(N, V) * col * K
+    return ret
+
+def dot_mult(vec1, vec2):
+    #returns scalar
+    return vec1[0] * vec2[0] + vec1[1] * vec2[1] + vec1[2] * vec2[2]
+
+def calc_length(vector):
+    return math.sqrt( math.pow(vector[0], 2) +
+                      math.pow(vector[1], 2) +
+                      math.pow(vector[2], 2))
+    
 
 def add_polygon( polygons, x0, y0, z0, x1, y1, z1, x2, y2, z2 ):
     add_point(polygons, x0, y0, z0);
     add_point(polygons, x1, y1, z1);
     add_point(polygons, x2, y2, z2);
 
-def draw_polygons( matrix, screen, zbuffer, color ):
+def draw_polygons( matrix, screen, zbuffer, color):
     if len(matrix) < 2:
         print 'Need at least 3 points to draw'
         return
@@ -139,33 +232,14 @@ def draw_polygons( matrix, screen, zbuffer, color ):
     point = 0
     global red
     red = 50
+    #matrix = [[400, 100, 0],[250, 400, 0],[100, 100, 0]]
+    #matrix = [[400, 400, 0],[100, 400, 0],[250, 100, 0]]
+    #matrix = [[400, 100, 0],[250, 400, 0],[100, 100, 0]]
     while point < len(matrix) - 2:
         normal = calculate_normal(matrix, point)[:]
         if normal[2] > 0:
-            red += 30
+            red += 50
             scanline_convert(matrix, point, screen, zbuffer)
-            
-##            draw_line( int(matrix[point][0]),
-##                       int(matrix[point][1]),
-##                       matrix[point][2],
-##                       int(matrix[point+1][0]),
-##                       int(matrix[point+1][1]),
-##                       matrix[point+1][2],
-##                       screen, zbuffer, color)
-##            draw_line( int(matrix[point+2][0]),
-##                       int(matrix[point+2][1]),
-##                       matrix[point+2][2],
-##                       int(matrix[point+1][0]),
-##                       int(matrix[point+1][1]),
-##                       matrix[point+1][2],
-##                       screen, zbuffer, color)
-##            draw_line( int(matrix[point][0]),
-##                       int(matrix[point][1]),
-##                       matrix[point][2],
-##                       int(matrix[point+2][0]),
-##                       int(matrix[point+2][1]),
-##                       matrix[point+2][2],
-##                       screen, zbuffer, color)    
         point+= 3
 
 
